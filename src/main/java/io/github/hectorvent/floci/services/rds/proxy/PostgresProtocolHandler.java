@@ -1562,9 +1562,12 @@ public class PostgresProtocolHandler {
                 closeQuietly(backend);
             }
         };
-        Thread t1 = Thread.ofVirtual().name("rds-pg-c2b")
+        boolean platform = "platform".equals(System.getenv("FLOCI_EXP_RELAY_THREADS"));
+        Thread.Builder c2b = platform ? Thread.ofPlatform().daemon() : Thread.ofVirtual();
+        Thread.Builder b2c = platform ? Thread.ofPlatform().daemon() : Thread.ofVirtual();
+        Thread t1 = c2b.name("rds-pg-c2b")
                 .start(() -> relay(clientIn, backendOut, closeBoth));
-        Thread t2 = Thread.ofVirtual().name("rds-pg-b2c")
+        Thread t2 = b2c.name("rds-pg-b2c")
                 .start(() -> relayToClient(backendIn, clientOut, session.iamRole(), closeBoth));
         try {
             t1.join();
